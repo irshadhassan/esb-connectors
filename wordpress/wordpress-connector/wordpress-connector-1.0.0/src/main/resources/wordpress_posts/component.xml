@@ -33,6 +33,14 @@
             <file>getLikesForPost.xml</file>
             <description>get Likes for a post </description>
         </component>
+        <component name="createImagePost">
+            <file>createImagePost.xml</file>
+            <description>create post with images</description>
+        </component>
+        <component name="editImagePost">
+            <file>editImagePost.xml</file>
+            <description>insert images to existing posts</description>
+        </component>
 
     </subComponents>
 </component>

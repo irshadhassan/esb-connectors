@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.json.JSONObject;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.wso2.connector.integration.test.base.ConnectorIntegrationTestBase;
@@ -40,6 +41,10 @@ public class WordpressConnectorIntegrationTest extends ConnectorIntegrationTestB
 
     private Map<String, String> parametersMap = new HashMap<String, String>();
 
+    private Map<String, String> headersMap = new HashMap<String, String>();
+
+    private String multipartProxyUrl;
+
     /**
      * Set up the environment.
      */
@@ -53,6 +58,9 @@ public class WordpressConnectorIntegrationTest extends ConnectorIntegrationTestB
 
         apiRequestHeadersMap.putAll(esbRequestHeadersMap);
         apiRequestHeadersMap.put("Authorization", "Bearer " + connectorProperties.getProperty("accessToken"));
+
+        String multipartPoxyName = connectorProperties.getProperty("multipartProxyName");
+        multipartProxyUrl = getProxyServiceURL(multipartPoxyName);
 
     }
 
@@ -1949,6 +1957,76 @@ public class WordpressConnectorIntegrationTest extends ConnectorIntegrationTestB
         Assert.assertEquals(esbRestResponse.getBody().getJSONObject("/sites/non-exist.wordpress.com").get("status_code"),404);
         Assert.assertEquals(apiRestResponse.getBody().getJSONObject("/sites/non-exist.wordpress.com").get("status_code"),404);
 
+    }
+
+    /**
+     * Positive test case for createImagePost .
+     */
+    @Test(groups = { "wso2.esb" }, description = "wordpress {createImagePost} integration test with mandatory parameters.")
+    public void testCreateImagePostWithMandatoryParameters() throws Exception {
+
+        headersMap.put("Authorization", "Bearer " + connectorProperties.getProperty("accessToken"));
+
+        headersMap.put("accessToken", connectorProperties.getProperty("accessToken"));
+        headersMap.put("domain", connectorProperties.getProperty("domain"));
+
+        headersMap.put("Action", "urn:createImagePost");
+
+        MultipartFormdataProcessor multipartProcessor =
+                new MultipartFormdataProcessor(multipartProxyUrl, headersMap);
+
+
+        multipartProcessor.addFormDataToRequest("title", "Post with Images");
+        multipartProcessor.addFileToRequest("media[]", connectorProperties.getProperty("uploadFileName"),null,connectorProperties.getProperty("targetFileName"));
+
+        RestResponse<JSONObject> esbRestResponse = multipartProcessor.processForJsonResponse();
+        parametersMap.put("imagePostId",esbRestResponse.getBody().getString("ID"));
+
+        String apiEndPoint = connectorProperties.getProperty("apiUrl") + connectorProperties.getProperty("domain") + "/posts/" + parametersMap.get("imagePostId") ;
+        RestResponse<JSONObject> apiRestResponse = sendJsonRestRequest(apiEndPoint, "GET", apiRequestHeadersMap);
+
+        Assert.assertTrue(apiRestResponse.getBody().has("ID"));
+
+    }
+
+    /**
+     * Positive test case for editImagePost .
+     */
+    @Test(dependsOnMethods = {"testCreateImagePostWithMandatoryParameters"},groups = { "wso2.esb" }, description = "wordpress {editImagePost} integration test with mandatory parameters.")
+    public void testEditImagePostWithMandatoryParameters() throws Exception {
+
+        headersMap.put("Authorization", "Bearer " + connectorProperties.getProperty("accessToken"));
+
+        headersMap.put("accessToken", connectorProperties.getProperty("accessToken"));
+        headersMap.put("domain", connectorProperties.getProperty("domain"));
+        headersMap.put("post_id", parametersMap.get("imagePostId"));
+
+        headersMap.put("Action", "urn:editImagePost");
+
+        MultipartFormdataProcessor multipartProcessor =
+                new MultipartFormdataProcessor(multipartProxyUrl, headersMap);
+
+
+        multipartProcessor.addFormDataToRequest("title", "Edit Post with Images");
+        multipartProcessor.addFileToRequest("media[]", connectorProperties.getProperty("editUploadFileName"),null,connectorProperties.getProperty("editTargetFileName"));
+
+        RestResponse<JSONObject> esbRestResponse = multipartProcessor.processForJsonResponse();
+
+        String apiEndPoint = connectorProperties.getProperty("apiUrl") + connectorProperties.getProperty("domain") + "/posts/" + parametersMap.get("imagePostId") ;
+        RestResponse<JSONObject> apiRestResponse = sendJsonRestRequest(apiEndPoint, "GET", apiRequestHeadersMap);
+
+        Assert.assertEquals(esbRestResponse.getBody().get("ID"), apiRestResponse.getBody().get("ID"));
+
+    }
+
+    /*
+     *delete the Image Post
+     */
+    @AfterClass(alwaysRun = true)
+    public void cleanUp() throws Exception{
+
+        String apiEndPoint =connectorProperties.getProperty("apiUrl") + connectorProperties.getProperty("domain") + "/posts/" + parametersMap.get("imagePostId") + "/delete";
+        RestResponse<JSONObject> apiRestResponse=sendJsonRestRequest(apiEndPoint,"POST",apiRequestHeadersMap);
     }
 
 }

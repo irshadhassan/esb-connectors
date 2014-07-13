@@ -22,11 +22,17 @@ STEPS:
 
                        <messageFormatter contentType="application/x-www-form-urlencoded"
                           class="org.apache.axis2.transport.http.XFormURLEncodedFormatter"/>
+
+                       <messageFormatter contentType="multipart/form-data"
+                          class="org.wso2.carbon.relay.ExpandingMessageFormatter"/>
    
    ii) Enable following message builders 
 
 			<messageBuilder contentType="application/x-www-form-urlencoded"
-                        class="org.apache.synapse.commons.builders.XFormURLEncodedBuilder"/>
+                          class="org.apache.synapse.commons.builders.XFormURLEncodedBuilder"/>
+
+                        <messageBuilder contentType="multipart/form-data"
+                          class="org.wso2.carbon.relay.BinaryRelayBuilder"/>
 
  3. To obtain an access token go through the following steps,
 
